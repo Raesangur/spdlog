@@ -4,6 +4,9 @@
 //
 
 #pragma once
+#ifndef SPDLOG_IMPL_H_
+#define SPDLOG_IMPL_H_
+
 
 //
 // Global registry functions
@@ -276,3 +279,5 @@ inline void spdlog::drop_all()
 {
     details::registry::instance().drop_all();
 }
+
+#endif

@@ -23,8 +23,13 @@ namespace sinks {
 /*
  * Trivial file sink with single file as target
  */
+#ifndef CEP_SPDLOG_MODIFIED
 template<class Mutex>
-class simple_file_sink SPDLOG_FINAL : public base_sink<Mutex>
+#endif
+class simple_file_sink SPDLOG_FINAL : public base_sink
+#ifndef CEP_SPDLOG_MODIFIED
+                                      <Mutex>
+#endif
 {
 public:
     explicit simple_file_sink(const filename_t &filename, bool truncate = false)
@@ -58,14 +63,29 @@ private:
     bool _force_flush;
 };
 
-using simple_file_sink_mt = simple_file_sink<std::mutex>;
-using simple_file_sink_st = simple_file_sink<details::null_mutex>;
+using simple_file_sink_mt = simple_file_sink
+#ifndef CEP_SPDLOG_MODIFIED
+    <std::mutex>;
+#else
+    ;
+#endif
+using simple_file_sink_st = simple_file_sink
+#ifndef CEP_SPDLOG_MODIFIED
+    <details::null_mutex>;
+#else
+    ;
+#endif
 
 /*
  * Rotating file sink based on size
  */
+#ifndef CEP_SPDLOG_MODIFIED
 template<class Mutex>
-class rotating_file_sink SPDLOG_FINAL : public base_sink<Mutex>
+#endif
+class rotating_file_sink SPDLOG_FINAL : public base_sink
+#ifndef CEP_SPDLOG_MODIFIED
+                                        <Mutex>
+#endif
 {
 public:
     rotating_file_sink(filename_t base_filename, std::size_t max_size, std::size_t max_files)
@@ -149,8 +169,18 @@ private:
     details::file_helper _file_helper;
 };
 
-using rotating_file_sink_mt = rotating_file_sink<std::mutex>;
-using rotating_file_sink_st = rotating_file_sink<details::null_mutex>;
+using rotating_file_sink_mt = rotating_file_sink
+#ifndef CEP_SPDLOG_MODIFIED
+    <std::mutex>;
+#else
+    ;
+#endif
+using rotating_file_sink_st = rotating_file_sink
+#ifndef CEP_SPDLOG_MODIFIED
+    <details::null_mutex>;
+#else
+    ;
+#endif
 
 /*
  * Default generator of daily log file names.
@@ -248,8 +278,18 @@ private:
     details::file_helper _file_helper;
 };
 
-using daily_file_sink_mt = daily_file_sink<std::mutex>;
-using daily_file_sink_st = daily_file_sink<details::null_mutex>;
+using daily_file_sink_mt = daily_file_sink
+#ifndef CEP_SPDLOG_MODIFIED
+    <std::mutex>;
+#else
+    ;
+#endif
+using daily_file_sink_st = daily_file_sink
+#ifndef CEP_SPDLOG_MODIFIED
+    <details::null_mutex>;
+#else
+    ;
+#endif
 
 } // namespace sinks
 } // namespace spdlog
