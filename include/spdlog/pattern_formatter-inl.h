@@ -1027,12 +1027,14 @@ SPDLOG_INLINE std::unique_ptr<formatter> pattern_formatter::clone() const
 
 SPDLOG_INLINE void pattern_formatter::format(const details::log_msg &msg, memory_buf_t &dest)
 {
+#ifndef CEP_SPDLOG_MODIFIED
     auto secs = std::chrono::duration_cast<std::chrono::seconds>(msg.time.time_since_epoch());
     if (secs != last_log_secs_)
     {
         cached_tm_ = get_time_(msg);
         last_log_secs_ = secs;
     }
+#endif
 
     for (auto &f : formatters_)
     {

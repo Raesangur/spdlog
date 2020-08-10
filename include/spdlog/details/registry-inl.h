@@ -8,7 +8,6 @@
 #endif
 
 #include <spdlog/common.h>
-#include <spdlog/details/periodic_worker.h>
 #include <spdlog/logger.h>
 #include <spdlog/pattern_formatter.h>
 
@@ -53,13 +52,25 @@ SPDLOG_INLINE registry::~registry() = default;
 
 SPDLOG_INLINE void registry::register_logger(std::shared_ptr<logger> new_logger)
 {
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{logger_map_mutex_};
+#endif
+#else
     std::lock_guard<std::mutex> lock(logger_map_mutex_);
+#endif
     register_logger_(std::move(new_logger));
 }
 
 SPDLOG_INLINE void registry::initialize_logger(std::shared_ptr<logger> new_logger)
 {
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{logger_map_mutex_};
+#endif
+#else
     std::lock_guard<std::mutex> lock(logger_map_mutex_);
+#endif
     new_logger->set_formatter(formatter_->clone());
 
     if (err_handler_)
@@ -83,14 +94,26 @@ SPDLOG_INLINE void registry::initialize_logger(std::shared_ptr<logger> new_logge
 
 SPDLOG_INLINE std::shared_ptr<logger> registry::get(const std::string &logger_name)
 {
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{logger_map_mutex_};
+#endif
+#else
     std::lock_guard<std::mutex> lock(logger_map_mutex_);
+#endif
     auto found = loggers_.find(logger_name);
     return found == loggers_.end() ? nullptr : found->second;
 }
 
 SPDLOG_INLINE std::shared_ptr<logger> registry::default_logger()
 {
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{logger_map_mutex_};
+#endif
+#else
     std::lock_guard<std::mutex> lock(logger_map_mutex_);
+#endif
     return default_logger_;
 }
 
@@ -107,7 +130,13 @@ SPDLOG_INLINE logger *registry::get_default_raw()
 // default logger is stored in default_logger_ (for faster retrieval) and in the loggers_ map.
 SPDLOG_INLINE void registry::set_default_logger(std::shared_ptr<logger> new_default_logger)
 {
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{logger_map_mutex_};
+#endif
+#else
     std::lock_guard<std::mutex> lock(logger_map_mutex_);
+#endif
     // remove previous default logger from the map
     if (default_logger_ != nullptr)
     {
@@ -122,20 +151,34 @@ SPDLOG_INLINE void registry::set_default_logger(std::shared_ptr<logger> new_defa
 
 SPDLOG_INLINE void registry::set_tp(std::shared_ptr<thread_pool> tp)
 {
-    std::lock_guard<std::recursive_mutex> lock(tp_mutex_);
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{tp_mutex_};
+#endif
+#else
+    std::lock_guard<std::mutex> lock(tp_mutex_);
+#endif
     tp_ = std::move(tp);
 }
 
 SPDLOG_INLINE std::shared_ptr<thread_pool> registry::get_tp()
 {
+#ifndef CEP_SPDLOG_MODIFIED
     std::lock_guard<std::recursive_mutex> lock(tp_mutex_);
+#endif
     return tp_;
 }
 
 // Set global formatter. Each sink in each logger will get a clone of this object
 SPDLOG_INLINE void registry::set_formatter(std::unique_ptr<formatter> formatter)
 {
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{logger_map_mutex_};
+#endif
+#else
     std::lock_guard<std::mutex> lock(logger_map_mutex_);
+#endif
     formatter_ = std::move(formatter);
     for (auto &l : loggers_)
     {
@@ -145,7 +188,13 @@ SPDLOG_INLINE void registry::set_formatter(std::unique_ptr<formatter> formatter)
 
 SPDLOG_INLINE void registry::enable_backtrace(size_t n_messages)
 {
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{logger_map_mutex_};
+#endif
+#else
     std::lock_guard<std::mutex> lock(logger_map_mutex_);
+#endif
     backtrace_n_messages_ = n_messages;
 
     for (auto &l : loggers_)
@@ -156,7 +205,13 @@ SPDLOG_INLINE void registry::enable_backtrace(size_t n_messages)
 
 SPDLOG_INLINE void registry::disable_backtrace()
 {
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{logger_map_mutex_};
+#endif
+#else
     std::lock_guard<std::mutex> lock(logger_map_mutex_);
+#endif
     backtrace_n_messages_ = 0;
     for (auto &l : loggers_)
     {
@@ -166,7 +221,13 @@ SPDLOG_INLINE void registry::disable_backtrace()
 
 SPDLOG_INLINE void registry::set_level(level::level_enum log_level)
 {
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{logger_map_mutex_};
+#endif
+#else
     std::lock_guard<std::mutex> lock(logger_map_mutex_);
+#endif
     for (auto &l : loggers_)
     {
         l.second->set_level(log_level);
@@ -176,7 +237,13 @@ SPDLOG_INLINE void registry::set_level(level::level_enum log_level)
 
 SPDLOG_INLINE void registry::flush_on(level::level_enum log_level)
 {
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{logger_map_mutex_};
+#endif
+#else
     std::lock_guard<std::mutex> lock(logger_map_mutex_);
+#endif
     for (auto &l : loggers_)
     {
         l.second->flush_on(log_level);
@@ -186,14 +253,31 @@ SPDLOG_INLINE void registry::flush_on(level::level_enum log_level)
 
 SPDLOG_INLINE void registry::flush_every(std::chrono::seconds interval)
 {
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{flusher_mutex_};
+#endif
+#else
     std::lock_guard<std::mutex> lock(flusher_mutex_);
+#endif
     auto clbk = [this]() { this->flush_all(); };
+#ifdef CEP_SPDLOG_MODIFIED
+    UNUSED(interval);
+    clbk();
+#else
     periodic_flusher_ = details::make_unique<periodic_worker>(clbk, interval);
+#endif
 }
 
 SPDLOG_INLINE void registry::set_error_handler(void (*handler)(const std::string &msg))
 {
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{logger_map_mutex_};
+#endif
+#else
     std::lock_guard<std::mutex> lock(logger_map_mutex_);
+#endif
     for (auto &l : loggers_)
     {
         l.second->set_error_handler(handler);
@@ -203,7 +287,13 @@ SPDLOG_INLINE void registry::set_error_handler(void (*handler)(const std::string
 
 SPDLOG_INLINE void registry::apply_all(const std::function<void(const std::shared_ptr<logger>)> &fun)
 {
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{logger_map_mutex_};
+#endif
+#else
     std::lock_guard<std::mutex> lock(logger_map_mutex_);
+#endif
     for (auto &l : loggers_)
     {
         fun(l.second);
@@ -212,7 +302,13 @@ SPDLOG_INLINE void registry::apply_all(const std::function<void(const std::share
 
 SPDLOG_INLINE void registry::flush_all()
 {
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{logger_map_mutex_};
+#endif
+#else
     std::lock_guard<std::mutex> lock(logger_map_mutex_);
+#endif
     for (auto &l : loggers_)
     {
         l.second->flush();
@@ -221,7 +317,13 @@ SPDLOG_INLINE void registry::flush_all()
 
 SPDLOG_INLINE void registry::drop(const std::string &logger_name)
 {
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{logger_map_mutex_};
+#endif
+#else
     std::lock_guard<std::mutex> lock(logger_map_mutex_);
+#endif
     loggers_.erase(logger_name);
     if (default_logger_ && default_logger_->name() == logger_name)
     {
@@ -231,7 +333,13 @@ SPDLOG_INLINE void registry::drop(const std::string &logger_name)
 
 SPDLOG_INLINE void registry::drop_all()
 {
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{logger_map_mutex_};
+#endif
+#else
     std::lock_guard<std::mutex> lock(logger_map_mutex_);
+#endif
     loggers_.clear();
     default_logger_.reset();
 }
@@ -240,32 +348,67 @@ SPDLOG_INLINE void registry::drop_all()
 SPDLOG_INLINE void registry::shutdown()
 {
     {
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+        cep::Lock_Guard lock{flusher_mutex_};
+#endif
+#else
         std::lock_guard<std::mutex> lock(flusher_mutex_);
+#endif
+#ifndef CEP_SPDLOG_MODIFIED
         periodic_flusher_.reset();
+#endif
     }
 
     drop_all();
 
     {
-        std::lock_guard<std::recursive_mutex> lock(tp_mutex_);
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+        cep::Lock_Guard lock{tp_mutex_};
+#endif
+#else
+        std::lock_guard<std::mutex> lock(tp_mutex_);
+#endif
         tp_.reset();
     }
 }
 
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+SPDLOG_INLINE cep::Mutex &registry::tp_mutex()
+{
+    return tp_mutex_;
+}
+#endif
+#else
 SPDLOG_INLINE std::recursive_mutex &registry::tp_mutex()
 {
     return tp_mutex_;
 }
+#endif
 
 SPDLOG_INLINE void registry::set_automatic_registration(bool automatic_registration)
 {
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{logger_map_mutex_};
+#endif
+#else
     std::lock_guard<std::mutex> lock(logger_map_mutex_);
+#endif
     automatic_registration_ = automatic_registration;
 }
 
 SPDLOG_INLINE void registry::update_levels(cfg::log_levels levels)
 {
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{logger_map_mutex_};
+#endif
+#else
     std::lock_guard<std::mutex> lock(logger_map_mutex_);
+#endif
     levels_ = std::move(levels);
     for (auto &l : loggers_)
     {

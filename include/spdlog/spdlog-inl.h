@@ -47,16 +47,6 @@ SPDLOG_INLINE void dump_backtrace()
     default_logger_raw()->dump_backtrace();
 }
 
-SPDLOG_INLINE level::level_enum get_level()
-{
-    return default_logger_raw()->level();
-}
-
-SPDLOG_INLINE bool should_log(level::level_enum log_level)
-{
-    return default_logger_raw()->should_log(log_level);
-}
-
 SPDLOG_INLINE void set_level(level::level_enum log_level)
 {
     details::registry::instance().set_level(log_level);

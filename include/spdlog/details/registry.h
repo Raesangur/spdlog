@@ -23,7 +23,6 @@ class logger;
 
 namespace details {
 class thread_pool;
-class periodic_worker;
 
 class SPDLOG_API registry
 {
@@ -76,7 +75,14 @@ public:
     // clean all resources and threads started by the registry
     void shutdown();
 
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Mutex &tp_mutex();
+#endif
+#else
+    std::lock_guard<std::mutex> lock{mutex_};
     std::recursive_mutex &tp_mutex();
+#endif
 
     void set_automatic_registration(bool automatic_registration);
 
@@ -90,15 +96,26 @@ private:
 
     void throw_if_exists_(const std::string &logger_name);
     void register_logger_(std::shared_ptr<logger> new_logger);
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Mutex logger_map_mutex_;
+    cep::Mutex flusher_mutex_;
+    cep::Mutex tp_mutex_;
+#endif
+#else
     std::mutex logger_map_mutex_, flusher_mutex_;
     std::recursive_mutex tp_mutex_;
+#endif
+
     std::unordered_map<std::string, std::shared_ptr<logger>> loggers_;
     cfg::log_levels levels_;
     std::unique_ptr<formatter> formatter_;
     level::level_enum flush_level_ = level::off;
     void (*err_handler_)(const std::string &msg);
     std::shared_ptr<thread_pool> tp_;
+#ifndef CEP_SPDLOG_MODIFIED
     std::unique_ptr<periodic_worker> periodic_flusher_;
+#endif
     std::shared_ptr<logger> default_logger_;
     bool automatic_registration_ = true;
     size_t backtrace_n_messages_ = 0;

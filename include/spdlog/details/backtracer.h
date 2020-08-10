@@ -17,13 +17,24 @@ namespace spdlog {
 namespace details {
 class SPDLOG_API backtracer
 {
+#ifndef CEP_SPDLOG_MODIFIED
     mutable std::mutex mutex_;
+#else
+#ifdef CEP_SPDLOG_USE_MUTEX
+    /* mutable */ cep::Mutex mutex_;
+#endif
+#endif
     std::atomic<bool> enabled_{false};
     circular_q<log_msg_buffer> messages_;
 
 public:
     backtracer() = default;
-    backtracer(const backtracer &other);
+    backtracer(
+#if defined(CEP_SPDLOG_MODIFIED) && defined(CEP_SPDLOG_USE_MUTEX)
+#else
+        const
+#endif
+        backtracer &other);
 
     backtracer(backtracer &&other) SPDLOG_NOEXCEPT;
     backtracer &operator=(backtracer other);

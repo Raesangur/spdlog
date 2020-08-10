@@ -67,7 +67,12 @@ public:
 
     virtual ~logger() = default;
 
-    logger(const logger &other);
+    logger(
+#if defined(CEP_SPDLOG_MODIFIED) && defined(CEP_SPDLOG_USE_MUTEX)
+#else
+        const
+#endif
+        logger &other);
     logger(logger &&other) SPDLOG_NOEXCEPT;
     logger &operator=(logger other) SPDLOG_NOEXCEPT;
 
@@ -75,14 +80,14 @@ public:
 
     // FormatString is a type derived from fmt::compile_string
     template<typename FormatString, typename std::enable_if<fmt::is_compile_string<FormatString>::value, int>::type = 0, typename... Args>
-    void log(source_loc loc, level::level_enum lvl, const FormatString &fmt, const Args &... args)
+    void log(SPDLOG_SOURCE_LOC loc, level::level_enum lvl, const FormatString &fmt, const Args &... args)
     {
         log_(loc, lvl, fmt, args...);
     }
 
     // FormatString is NOT a type derived from fmt::compile_string but is a string_view_t or can be implicitly converted to one
     template<typename... Args>
-    void log(source_loc loc, level::level_enum lvl, string_view_t fmt, const Args &... args)
+    void log(SPDLOG_SOURCE_LOC loc, level::level_enum lvl, string_view_t fmt, const Args &... args)
     {
         log_(loc, lvl, fmt, args...);
     }
@@ -138,12 +143,12 @@ public:
     // T can be statically converted to string_view and isn't a fmt::compile_string
     template<class T, typename std::enable_if<
                           std::is_convertible<const T &, spdlog::string_view_t>::value && !fmt::is_compile_string<T>::value, int>::type = 0>
-    void log(source_loc loc, level::level_enum lvl, const T &msg)
+    void log(SPDLOG_SOURCE_LOC loc, level::level_enum lvl, const T &msg)
     {
         log(loc, lvl, string_view_t{msg});
     }
 
-    void log(log_clock::time_point log_time, source_loc loc, level::level_enum lvl, string_view_t msg)
+    void log(log_clock::time_point log_time, SPDLOG_SOURCE_LOC loc, level::level_enum lvl, string_view_t msg)
     {
         bool log_enabled = should_log(lvl);
         bool traceback_enabled = tracer_.enabled();
@@ -156,7 +161,7 @@ public:
         log_it_(log_msg, log_enabled, traceback_enabled);
     }
 
-    void log(source_loc loc, level::level_enum lvl, string_view_t msg)
+    void log(SPDLOG_SOURCE_LOC loc, level::level_enum lvl, string_view_t msg)
     {
         bool log_enabled = should_log(lvl);
         bool traceback_enabled = tracer_.enabled();
@@ -178,7 +183,7 @@ public:
     template<class T, typename std::enable_if<!std::is_convertible<const T &, spdlog::string_view_t>::value &&
                                                   !is_convertible_to_wstring_view<const T &>::value,
                           int>::type = 0>
-    void log(source_loc loc, level::level_enum lvl, const T &msg)
+    void log(SPDLOG_SOURCE_LOC loc, level::level_enum lvl, const T &msg)
     {
         log(loc, lvl, "{}", msg);
     }

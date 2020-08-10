@@ -3,6 +3,12 @@
 
 #pragma once
 
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+#include "defines/mutex.hpp"
+#endif
+#endif
+
 #include <spdlog/tweakme.h>
 #include <spdlog/details/null_mutex.h>
 
@@ -34,6 +40,12 @@
 #endif // #ifdef SPDLOG_COMPILED_LIB
 
 #include <spdlog/fmt/fmt.h>
+
+#ifdef CEP_SPDLOG_MODIFIED
+#define SPDLOG_SOURCE_LOC const spdlog::source_loc&
+#else
+#define SPDLOG_SOURCE_LOC spdlog::source_loc
+#endif
 
 // visual studio upto 2013 does not support noexcept nor constexpr
 #if defined(_MSC_VER) && (_MSC_VER < 1900)
@@ -101,6 +113,11 @@ using err_handler = std::function<void(const std::string &err_msg)>;
 using string_view_t = fmt::basic_string_view<char>;
 using wstring_view_t = fmt::basic_string_view<wchar_t>;
 using memory_buf_t = fmt::basic_memory_buffer<char, 250>;
+#ifdef CEP_SPDLOG_MODIFIED
+using log_handler = std::function<void(const spdlog::memory_buf_t& formattedMsg)>;
+using log_err_handler = std::function<void(const std::string& err_msg)>;
+using formatter_ptr = std::shared_ptr<spdlog::formatter>;
+#endif
 
 #ifdef SPDLOG_WCHAR_TO_UTF8_SUPPORT
 #ifndef _WIN32

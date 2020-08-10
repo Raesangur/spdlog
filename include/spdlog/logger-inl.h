@@ -16,7 +16,12 @@
 namespace spdlog {
 
 // public methods
-SPDLOG_INLINE logger::logger(const logger &other)
+SPDLOG_INLINE logger::logger(
+#if defined(CEP_SPDLOG_MODIFIED) && defined(CEP_SPDLOG_USE_MUTEX)
+#else
+    const
+#endif
+    logger &other)
     : name_(other.name_)
     , sinks_(other.sinks_)
     , level_(other.level_.load(std::memory_order_relaxed))
@@ -233,10 +238,17 @@ SPDLOG_INLINE void logger::err_handler_(const std::string &msg)
     else
     {
         using std::chrono::system_clock;
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+//        static cep::Mutex mutex;
+//        cep::Lock_Guard lk{mutex};
+#endif
+#else
         static std::mutex mutex;
+        std::lock_guard<std::mutex> lk{mutex};
+#endif
         static std::chrono::system_clock::time_point last_report_time;
         static size_t err_counter = 0;
-        std::lock_guard<std::mutex> lk{mutex};
         auto now = system_clock::now();
         err_counter++;
         if (now - last_report_time < std::chrono::seconds(1))

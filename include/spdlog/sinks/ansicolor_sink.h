@@ -21,11 +21,20 @@ namespace sinks {
  * If no color terminal detected, omit the escape codes.
  */
 
+#ifndef CEP_SPDLOG_MODIFIED
 template<typename ConsoleMutex>
+#endif
 class ansicolor_sink : public sink
 {
 public:
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    using mutex_t = cep::Mutex;
+#endif
+#else
     using mutex_t = typename ConsoleMutex::mutex_t;
+#endif
+
     ansicolor_sink(FILE *target_file, color_mode mode);
     ~ansicolor_sink() override = default;
 
@@ -81,7 +90,13 @@ public:
 
 private:
     FILE *target_file_;
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    mutex_t mutex_;
+#endif
+#else
     mutex_t &mutex_;
+#endif
     bool should_do_colors_;
     std::unique_ptr<spdlog::formatter> formatter_;
     std::array<std::string, level::n_levels> colors_;
@@ -90,25 +105,56 @@ private:
     static std::string to_string_(const string_view_t &sv);
 };
 
+#ifndef CEP_SPDLOG_MODIFIED
 template<typename ConsoleMutex>
-class ansicolor_stdout_sink : public ansicolor_sink<ConsoleMutex>
+#endif
+class ansicolor_stdout_sink : public ansicolor_sink
+#ifndef CEP_SPDLOG_MODIFIED
+                              <ConsoleMutex>
+#endif
 {
 public:
     explicit ansicolor_stdout_sink(color_mode mode = color_mode::automatic);
 };
 
+#ifndef CEP_SPDLOG_MODIFIED
 template<typename ConsoleMutex>
-class ansicolor_stderr_sink : public ansicolor_sink<ConsoleMutex>
+#endif
+class ansicolor_stderr_sink : public ansicolor_sink
+#ifndef CEP_SPDLOG_MODIFIED
+                              <ConsoleMutex>
+#endif
 {
 public:
     explicit ansicolor_stderr_sink(color_mode mode = color_mode::automatic);
 };
 
-using ansicolor_stdout_sink_mt = ansicolor_stdout_sink<details::console_mutex>;
-using ansicolor_stdout_sink_st = ansicolor_stdout_sink<details::console_nullmutex>;
+using ansicolor_stdout_sink_mt = ansicolor_stdout_sink
+#ifndef CEP_SPDLOG_MODIFIED
+    <details::console_mutex>;
+#else
+    ;
+#endif
 
-using ansicolor_stderr_sink_mt = ansicolor_stderr_sink<details::console_mutex>;
-using ansicolor_stderr_sink_st = ansicolor_stderr_sink<details::console_nullmutex>;
+using ansicolor_stdout_sink_st = ansicolor_stdout_sink
+#ifndef CEP_SPDLOG_MODIFIED
+    <details::console_nullmutex>;
+#else
+    ;
+#endif
+
+using ansicolor_stderr_sink_mt = ansicolor_stderr_sink
+#ifndef CEP_SPDLOG_MODIFIED
+    <details::console_mutex>;
+#else
+    ;
+#endif
+using ansicolor_stderr_sink_st = ansicolor_stderr_sink
+#ifndef CEP_SPDLOG_MODIFIED
+    <details::console_nullmutex>;
+#else
+    ;
+#endif
 
 } // namespace sinks
 } // namespace spdlog

@@ -228,7 +228,11 @@ SPDLOG_INLINE size_t filesize(FILE *f)
 #if defined(__OpenBSD__)
     int fd = fileno(f);
 #else
+#ifdef CEP_SPDLOG_MODIFIED
+    int fd = 1;
+#else
     int fd = ::fileno(f);
+#endif
 #endif
 // 64 bits(but not in osx or cygwin, where fstat64 is deprecated)
 #if (defined(__linux__) || defined(__sun) || defined(_AIX)) && (defined(__LP64__) || defined(_LP64))
@@ -319,6 +323,9 @@ SPDLOG_INLINE int utc_minutes_offset(const std::tm &tm)
 // under VS 2013)
 SPDLOG_INLINE size_t _thread_id() SPDLOG_NOEXCEPT
 {
+#ifdef CEP_SPDLOG_MODIFIED
+    return 0;
+#else
 #ifdef _WIN32
     return static_cast<size_t>(::GetCurrentThreadId());
 #elif defined(__linux__)
@@ -341,6 +348,7 @@ SPDLOG_INLINE size_t _thread_id() SPDLOG_NOEXCEPT
 #else // Default to standard C++11 (other Unix)
     return static_cast<size_t>(std::hash<std::thread::id>()(std::this_thread::get_id()));
 #endif
+#endif
 }
 
 // Return current thread id as size_t (from thread local storage)
@@ -358,10 +366,18 @@ SPDLOG_INLINE size_t thread_id() SPDLOG_NOEXCEPT
 // See https://github.com/gabime/spdlog/issues/609
 SPDLOG_INLINE void sleep_for_millis(int milliseconds) SPDLOG_NOEXCEPT
 {
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef USE_FREERTOS
+    osDelay(milliseconds);
+#else
+    HAL_Delay(milliseconds);
+#endif
+#else
 #if defined(_WIN32)
     ::Sleep(milliseconds);
 #else
     std::this_thread::sleep_for(std::chrono::milliseconds(milliseconds));
+#endif
 #endif
 }
 
@@ -416,11 +432,15 @@ SPDLOG_INLINE bool is_color_terminal() SPDLOG_NOEXCEPT
 // Source: https://github.com/agauniyal/rang/
 SPDLOG_INLINE bool in_terminal(FILE *file) SPDLOG_NOEXCEPT
 {
-
+#ifdef CEP_SPDLOG_MODIFIED
+    UNUSED(file);
+    return true;
+#else
 #ifdef _WIN32
     return ::_isatty(_fileno(file)) != 0;
 #else
     return ::isatty(fileno(file)) != 0;
+#endif
 #endif
 }
 

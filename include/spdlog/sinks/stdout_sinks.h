@@ -12,11 +12,20 @@ namespace spdlog {
 
 namespace sinks {
 
+#ifndef CEP_SPDLOG_MODIFIED
 template<typename ConsoleMutex>
+#endif
 class stdout_sink_base : public sink
 {
 public:
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    using mutex_t = cep::Mutex;
+#endif
+#else
     using mutex_t = typename ConsoleMutex::mutex_t;
+#endif
+
     explicit stdout_sink_base(FILE *file);
     ~stdout_sink_base() override = default;
 
@@ -32,31 +41,74 @@ public:
 
     void set_formatter(std::unique_ptr<spdlog::formatter> sink_formatter) override;
 
+#ifdef CEP_SPDLOG_MODIFIED
+    void set_custom_logger(log_handler custom_log_handler);
+#endif
+
 protected:
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    mutex_t mutex_;
+#endif
+#else
     mutex_t &mutex_;
+#endif
+#ifdef CEP_SPDLOG_MODIFIED
+    log_handler custom_log_handler_;
+#endif
     FILE *file_;
     std::unique_ptr<spdlog::formatter> formatter_;
 };
 
+#ifndef CEP_SPDLOG_MODIFIED
 template<typename ConsoleMutex>
-class stdout_sink : public stdout_sink_base<ConsoleMutex>
+#endif
+class stdout_sink : public stdout_sink_base
+#ifndef CEP_SPDLOG_MODIFIED
+                    <ConsoleMutex>
+#endif
 {
 public:
     stdout_sink();
 };
 
+#ifndef CEP_SPDLOG_MODIFIED
 template<typename ConsoleMutex>
-class stderr_sink : public stdout_sink_base<ConsoleMutex>
+#endif
+class stderr_sink : public stdout_sink_base
+#ifndef CEP_SPDLOG_MODIFIED
+                    <ConsoleMutex>
+#endif
 {
 public:
     stderr_sink();
 };
 
-using stdout_sink_mt = stdout_sink<details::console_mutex>;
-using stdout_sink_st = stdout_sink<details::console_nullmutex>;
+using stdout_sink_mt = stdout_sink
+#ifndef CEP_SPDLOG_MODIFIED
+    <details::console_mutex>;
+#else
+    ;
+#endif
+using stdout_sink_st = stdout_sink
+#ifndef CEP_SPDLOG_MODIFIED
+    <details::console_nullmutex>;
+#else
+    ;
+#endif
 
-using stderr_sink_mt = stderr_sink<details::console_mutex>;
-using stderr_sink_st = stderr_sink<details::console_nullmutex>;
+using stderr_sink_mt = stderr_sink
+#ifndef CEP_SPDLOG_MODIFIED
+    <details::console_mutex>;
+#else
+    ;
+#endif
+using stderr_sink_st = stderr_sink
+#ifndef CEP_SPDLOG_MODIFIED
+    <details::console_nullmutex>;
+#else
+    ;
+#endif
 
 } // namespace sinks
 

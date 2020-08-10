@@ -9,6 +9,7 @@
 namespace spdlog {
 namespace details {
 
+#ifndef CEP_SPDLOG_MODIFIED
 struct console_mutex
 {
     using mutex_t = std::mutex;
@@ -28,5 +29,7 @@ struct console_nullmutex
         return s_mutex;
     }
 };
+#endif
+
 } // namespace details
 } // namespace spdlog

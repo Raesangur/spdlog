@@ -92,7 +92,7 @@ struct formatter<spdlog::details::dump_info<T>>
     auto parse(ParseContext &ctx) -> decltype(ctx.begin())
     {
         auto it = ctx.begin();
-        while (it != ctx.end() && *it != '}')
+        while (*it && *it != '}')
         {
             switch (*it)
             {

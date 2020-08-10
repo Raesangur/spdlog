@@ -15,54 +15,149 @@ namespace spdlog {
 
 namespace sinks {
 
+#ifndef CEP_SPDLOG_MODIFIED
 template<typename ConsoleMutex>
-SPDLOG_INLINE stdout_sink_base<ConsoleMutex>::stdout_sink_base(FILE *file)
-    : mutex_(ConsoleMutex::mutex())
-    , file_(file)
+#endif
+SPDLOG_INLINE stdout_sink_base
+#ifndef CEP_SPDLOG_MODIFIED
+    <ConsoleMutex>
+#endif
+    ::stdout_sink_base(FILE *file)
+    :
+#ifndef CEP_SPDLOG_MODIFIED
+    mutex_(ConsoleMutex::mutex())
+    ,
+#endif
+    file_(file)
     , formatter_(details::make_unique<spdlog::pattern_formatter>())
 {}
 
+#ifndef CEP_SPDLOG_MODIFIED
 template<typename ConsoleMutex>
-SPDLOG_INLINE void stdout_sink_base<ConsoleMutex>::log(const details::log_msg &msg)
+#endif
+SPDLOG_INLINE void stdout_sink_base
+#ifndef CEP_SPDLOG_MODIFIED
+    <ConsoleMutex>
+#endif
+    ::log(const details::log_msg &msg)
 {
-    std::lock_guard<mutex_t> lock(mutex_);
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{mutex_};
+#endif
+#else
+    std::lock_guard<std::mutex> lock(mutex_t);
+#endif
     memory_buf_t formatted;
     formatter_->format(msg, formatted);
-    fwrite(formatted.data(), sizeof(char), formatted.size(), file_);
-    fflush(file_); // flush every line to terminal
+
+#ifdef CEP_SPDLOG_MODIFIED
+    if (custom_log_handler_)
+    {
+        custom_log_handler_(formatted);
+    }
+    else
+#endif
+    {
+        fwrite(formatted.data(), sizeof(char), formatted.size(), file_);
+        fflush(file_); // flush every line to terminal
+    }
 }
 
-template<typename ConsoleMutex>
-SPDLOG_INLINE void stdout_sink_base<ConsoleMutex>::flush()
+#ifdef CEP_SPDLOG_MODIFIED
+SPDLOG_INLINE void stdout_sink_base::set_custom_logger(log_handler custom_log_handler)
 {
-    std::lock_guard<mutex_t> lock(mutex_);
+    custom_log_handler_ = std::move(custom_log_handler);
+}
+#endif
+
+#ifndef CEP_SPDLOG_MODIFIED
+template<typename ConsoleMutex>
+#endif
+SPDLOG_INLINE void stdout_sink_base
+#ifndef CEP_SPDLOG_MODIFIED
+    <ConsoleMutex>
+#endif
+    ::flush()
+{
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{mutex_};
+#endif
+#else
+    std::lock_guard<std::mutex> lock(mutex_t);
+#endif
     fflush(file_);
 }
 
+#ifndef CEP_SPDLOG_MODIFIED
 template<typename ConsoleMutex>
-SPDLOG_INLINE void stdout_sink_base<ConsoleMutex>::set_pattern(const std::string &pattern)
+#endif
+SPDLOG_INLINE void stdout_sink_base
+#ifndef CEP_SPDLOG_MODIFIED
+    <ConsoleMutex>
+#endif
+    ::set_pattern(const std::string &pattern)
 {
-    std::lock_guard<mutex_t> lock(mutex_);
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{mutex_};
+#endif
+#else
+    std::lock_guard<std::mutex> lock(mutex_t);
+#endif
     formatter_ = std::unique_ptr<spdlog::formatter>(new pattern_formatter(pattern));
 }
 
+#ifndef CEP_SPDLOG_MODIFIED
 template<typename ConsoleMutex>
-SPDLOG_INLINE void stdout_sink_base<ConsoleMutex>::set_formatter(std::unique_ptr<spdlog::formatter> sink_formatter)
+#endif
+SPDLOG_INLINE void stdout_sink_base
+#ifndef CEP_SPDLOG_MODIFIED
+    <ConsoleMutex>
+#endif
+    ::set_formatter(std::unique_ptr<spdlog::formatter> sink_formatter)
 {
-    std::lock_guard<mutex_t> lock(mutex_);
+#ifdef CEP_SPDLOG_MODIFIED
+#ifdef CEP_SPDLOG_USE_MUTEX
+    cep::Lock_Guard lock{mutex_};
+#endif
+#else
+    std::lock_guard<std::mutex> lock(mutex_t);
+#endif
     formatter_ = std::move(sink_formatter);
 }
 
 // stdout sink
+#ifndef CEP_SPDLOG_MODIFIED
 template<typename ConsoleMutex>
-SPDLOG_INLINE stdout_sink<ConsoleMutex>::stdout_sink()
-    : stdout_sink_base<ConsoleMutex>(stdout)
+#endif
+SPDLOG_INLINE stdout_sink
+#ifndef CEP_SPDLOG_MODIFIED
+    <ConsoleMutex>
+#endif
+    ::stdout_sink()
+    : stdout_sink_base
+#ifndef CEP_SPDLOG_MODIFIED
+    <ConsoleMutex>
+#endif
+    (stdout)
 {}
 
 // stderr sink
+#ifndef CEP_SPDLOG_MODIFIED
 template<typename ConsoleMutex>
-SPDLOG_INLINE stderr_sink<ConsoleMutex>::stderr_sink()
-    : stdout_sink_base<ConsoleMutex>(stderr)
+#endif
+SPDLOG_INLINE stderr_sink
+#ifndef CEP_SPDLOG_MODIFIED
+    <ConsoleMutex>
+#endif
+    ::stderr_sink()
+    : stdout_sink_base
+#ifndef CEP_SPDLOG_MODIFIED
+    <ConsoleMutex>
+#endif
+    (stderr)
 {}
 
 } // namespace sinks

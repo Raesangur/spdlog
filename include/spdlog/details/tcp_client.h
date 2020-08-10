@@ -75,11 +75,7 @@ public:
         int last_errno = 0;
         for (auto *rp = addrinfo_result; rp != nullptr; rp = rp->ai_next)
         {
-#if defined(SOCK_CLOEXEC)
-            const int flags = SOCK_CLOEXEC;
-#else
-            const int flags = 0;
-#endif
+            int const flags = SOCK_CLOEXEC;
             socket_ = ::socket(rp->ai_family, rp->ai_socktype | flags, rp->ai_protocol);
             if (socket_ == -1)
             {
@@ -91,9 +87,12 @@ public:
             {
                 break;
             }
-            last_errno = errno;
-            ::close(socket_);
-            socket_ = -1;
+            else
+            {
+                last_errno = errno;
+                ::close(socket_);
+                socket_ = -1;
+            }
         }
         ::freeaddrinfo(addrinfo_result);
         if (socket_ == -1)
